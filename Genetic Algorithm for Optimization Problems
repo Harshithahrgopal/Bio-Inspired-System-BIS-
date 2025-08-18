@@ -1,0 +1,81 @@
+import random
+
+# Fitness function: f(x) = x^2
+def fitness_function(x):
+    return x ** 2
+
+# Decode 5-bit chromosome to integer x in [0, 31]
+def decode(chromosome):
+    binary_str = ''.join(str(bit) for bit in chromosome)
+    return int(binary_str, 2)
+
+POPULATION_SIZE = 10
+CHROMOSOME_LENGTH = 5  # 5 bits for [0,31]
+MUTATION_RATE = 0.1
+CROSSOVER_RATE = 0.7
+GENERATIONS = 10
+
+# Create initial population (list of chromosomes)
+def create_population():
+    return [[random.randint(0,1) for _ in range(CHROMOSOME_LENGTH)] for _ in range(POPULATION_SIZE)]
+
+# Evaluate fitness for population
+def evaluate_population(population):
+    return [fitness_function(decode(chromosome)) for chromosome in population]
+
+# Selection: roulette wheel based on fitness
+def select(population, fitness_values):
+    total_fitness = sum(fitness_values)
+    probs = [f / total_fitness for f in fitness_values]
+    selected = random.choices(population, weights=probs, k=POPULATION_SIZE)
+    return selected
+
+# Single-point crossover
+def crossover(parent1, parent2):
+    if random.random() < CROSSOVER_RATE:
+        point = random.randint(1, CHROMOSOME_LENGTH - 1)
+        child1 = parent1[:point] + parent2[point:]
+        child2 = parent2[:point] + parent1[point:]
+        return child1, child2
+    else:
+        return parent1[:], parent2[:]
+
+# Mutation: flip bits with a chance of MUTATION_RATE
+def mutate(chromosome):
+    return [bit if random.random() > MUTATION_RATE else 1 - bit for bit in chromosome]
+
+def genetic_algorithm():
+    population = create_population()
+    best_solution = None
+    best_fitness = float('-inf')
+
+    for gen in range(GENERATIONS):
+        fitness_values = evaluate_population(population)
+        
+        # Track best
+        max_fit = max(fitness_values)
+        if max_fit > best_fitness:
+            best_fitness = max_fit
+            best_solution = population[fitness_values.index(max_fit)]
+        
+        print(f"Gen {gen+1}: Best Fitness = {best_fitness}, Best x = {decode(best_solution)}")
+
+        # Selection
+        selected = select(population, fitness_values)
+        
+        # Create next generation with crossover and mutation
+        next_gen = []
+        for i in range(0, POPULATION_SIZE, 2):
+            p1 = selected[i]
+            p2 = selected[(i+1) % POPULATION_SIZE]
+            c1, c2 = crossover(p1, p2)
+            next_gen.append(mutate(c1))
+            next_gen.append(mutate(c2))
+        
+        population = next_gen[:POPULATION_SIZE]
+
+    return decode(best_solution), best_fitness
+
+# Run the simple GA
+best_x, best_fit = genetic_algorithm()
+print(f"\nBest solution: x = {best_x}, fitness = {best_fit}")
