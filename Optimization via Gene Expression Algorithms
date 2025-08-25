@@ -1,0 +1,99 @@
+import numpy as np
+
+# 1. Define the Problem: Sphere function to minimize
+def sphere_function(x):
+    return np.sum(x ** 2)
+
+# 2. Initialize Parameters
+POPULATION_SIZE = 20
+NUM_GENES = 4
+GENE_MIN = -5.0
+GENE_MAX = 5.0
+MUTATION_RATE = 0.1
+CROSSOVER_RATE = 0.8
+NUM_GENERATIONS = 4
+
+
+# 3. Initialize Population: random real-valued gene sequences
+def initialize_population():
+    return np.random.uniform(GENE_MIN, GENE_MAX, (POPULATION_SIZE, NUM_GENES))
+
+# 4. Evaluate Fitness: here lower fitness is better since minimizing
+def evaluate_fitness(population):
+    fitness_values = np.array([sphere_function(gene_expression(ind)) for ind in population])
+    return fitness_values
+
+# 5. Selection: tournament selection
+def select(population, fitness):
+    selected = []
+    for _ in range(POPULATION_SIZE):
+        i, j = np.random.randint(0, POPULATION_SIZE, 2)
+        winner = population[i] if fitness[i] < fitness[j] else population[j]
+        selected.append(winner)
+    return np.array(selected)
+
+# 6. Crossover: uniform crossover
+def crossover(parent1, parent2):
+    if np.random.rand() < CROSSOVER_RATE:
+        mask = np.random.rand(NUM_GENES) > 0.5
+        child1 = np.where(mask, parent1, parent2)
+        child2 = np.where(mask, parent2, parent1)
+        return child1, child2
+    else:
+        return parent1.copy(), parent2.copy()
+
+# 7. Mutation: add gaussian noise
+def mutate(individual):
+    for i in range(NUM_GENES):
+        if np.random.rand() < MUTATION_RATE:
+            individual[i] += np.random.normal(0, 0.5)
+            individual[i] = np.clip(individual[i], GENE_MIN, GENE_MAX)
+    return individual
+
+# 8. Gene Expression: here, identity function, genes represent variables directly
+def gene_expression(genetic_sequence):
+    return genetic_sequence
+
+# 9. Main iterative process
+def gene_expression_algorithm():
+    population = initialize_population()
+    best_solution = None
+    best_fitness = float('inf')
+
+    print("Starting Gene Expression Algorithm Optimization...\n")
+    print(f"{'Gen':<4} {'Best Fitness':<15} {'Best Solution (genes)'}")
+
+    for generation in range(1, NUM_GENERATIONS + 1):
+        fitness = evaluate_fitness(population)
+
+        # Track the best solution
+        min_idx = np.argmin(fitness)
+        if fitness[min_idx] < best_fitness:
+            best_fitness = fitness[min_idx]
+            best_solution = population[min_idx].copy()
+
+        # Print progress
+        print(f"{generation:<4} {best_fitness:<15.6f} {np.round(best_solution, 4)}")
+
+        # Selection
+        selected = select(population, fitness)
+
+        # Create next generation
+        next_population = []
+        for i in range(0, POPULATION_SIZE, 2):
+            parent1 = selected[i]
+            parent2 = selected[i + 1 if i + 1 < POPULATION_SIZE else 0]
+            child1, child2 = crossover(parent1, parent2)
+            next_population.append(mutate(child1))
+            next_population.append(mutate(child2))
+
+        population = np.array(next_population)
+
+    print("\nOptimization finished!")
+    print(f"Best solution found: {np.round(best_solution,4)} with fitness: {best_fitness:.6f}")
+
+    return best_solution, best_fitness
+
+# Run the algorithm
+if __name__ == "__main__":
+    gene_expression_algorithm()
