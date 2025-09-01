@@ -1,0 +1,59 @@
+import numpy as np
+
+# 1. Define the objective function (1D)
+def objective_function(x):
+    return x**2  # Minimize this function
+
+# 2. PSO parameters
+num_particles = 2
+num_iterations = 51
+
+w = 0.5   # Inertia weight
+c1 = 1.5  # Cognitive coefficient
+c2 = 1.5  # Social coefficient
+
+# 3. Initialize particles (1D positions and velocities)
+positions = np.random.uniform(-10, 10, num_particles)
+velocities = np.random.uniform(-1, 1, num_particles)
+
+# 4. Initialize personal and global bests
+personal_best_positions = positions.copy()
+personal_best_scores = np.array([objective_function(x) for x in positions])
+
+global_best_index = np.argmin(personal_best_scores)
+global_best_position = personal_best_positions[global_best_index]
+global_best_score = personal_best_scores[global_best_index]
+
+# 5. PSO main loop
+for iteration in range(num_iterations):
+    for i in range(num_particles):
+        current_score = objective_function(positions[i])
+
+        # Update personal best
+        if current_score < personal_best_scores[i]:
+            personal_best_scores[i] = current_score
+            personal_best_positions[i] = positions[i]
+
+        # Update global best
+        if current_score < global_best_score:
+            global_best_score = current_score
+            global_best_position = positions[i]
+
+    # Update velocities and positions (1D)
+    r1 = np.random.rand(num_particles)
+    r2 = np.random.rand(num_particles)
+
+    cognitive = c1 * r1 * (personal_best_positions - positions)
+    social = c2 * r2 * (global_best_position - positions)
+
+    velocities = w * velocities + cognitive + social
+    positions = positions + velocities
+
+    # Print progress
+    if iteration % 10 == 0 or iteration == num_iterations - 1:
+        print(f"Iteration {iteration}: Best Score = {global_best_score:.6f}")
+
+# 6. Final result
+print("\n Best solution found:")
+print("Best x:", global_best_position)
+print("Minimum value:", global_best_score)
