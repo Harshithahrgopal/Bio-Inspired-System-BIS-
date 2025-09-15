@@ -1,0 +1,80 @@
+import numpy as np
+import math   # ✅ use this instead of np.math
+
+# Define the Knapsack Problem
+values = [60, 100, 120, 80, 40]
+weights = [10, 20, 30, 40, 15]
+capacity = 50
+n_items = len(values)
+
+print("📦 Knapsack Problem Input")
+print("----------------------------")
+print("Number of Items:", n_items)
+print("Values :", values)
+print("Weights:", weights)
+print("Capacity:", capacity)
+print("----------------------------\n")
+
+# Fitness function
+def fitness(solution):
+    total_value = np.sum(solution * values)
+    total_weight = np.sum(solution * weights)
+    if total_weight > capacity:
+        return 0  # invalid solution
+    return total_value
+
+# Levy flight
+def levy_flight(Lambda):
+    sigma = (math.gamma(1+Lambda) * math.sin(math.pi*Lambda/2) /
+             (math.gamma((1+Lambda)/2) * Lambda * 2**((Lambda-1)/2)))**(1/Lambda)
+    u = np.random.normal(0, sigma, size=n_items)
+    v = np.random.normal(0, 1, size=n_items)
+    step = u / (np.abs(v)**(1/Lambda))
+    return step
+
+# Cuckoo Search Algorithm
+def cuckoo_search(n=10, max_iter=50, pa=0.25):
+    nests = np.random.randint(0, 2, size=(n, n_items))
+    fitness_values = np.array([fitness(nest) for nest in nests])
+    best_index = np.argmax(fitness_values)
+    best_nest = nests[best_index].copy()
+    best_fitness = fitness_values[best_index]
+
+    for iteration in range(max_iter):
+        for i in range(n):
+            new_nest = nests[i] + levy_flight(1.5) * np.random.randn(n_items)
+            new_nest = np.clip(np.round(new_nest), 0, 1).astype(int)  # keep 0/1
+            f_new = fitness(new_nest)
+
+            if f_new > fitness_values[i]:
+                nests[i] = new_nest
+                fitness_values[i] = f_new
+
+        # Abandon some nests
+        abandon = np.random.rand(n, n_items) < pa
+        random_nests = np.random.randint(0, 2, size=(n, n_items))
+        nests = np.where(abandon, random_nests, nests)
+        fitness_values = np.array([fitness(nest) for nest in nests])
+
+        # Update best
+        best_index = np.argmax(fitness_values)
+        if fitness_values[best_index] > best_fitness:
+            best_nest = nests[best_index].copy()
+            best_fitness = fitness_values[best_index]
+
+        # Print progress every 10 iterations
+        if (iteration + 1) % 10 == 0:
+            total_weight = np.sum(best_nest * weights)
+            print(f"Iteration {iteration+1}: Best Value = {best_fitness}, Weight = {total_weight}, Items = {best_nest}")
+
+    return best_nest, best_fitness
+
+# Run
+best_solution, best_value = cuckoo_search()
+best_weight = np.sum(best_solution * weights)
+
+print("\n✅ Final Best Solution")
+print("----------------------------")
+print("Selected Items:", best_solution)
+print("Total Value   :", best_value)
+print("Total Weight  :", best_weight)
